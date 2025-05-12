@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { createAccount } from "@/lib/actions/user.action";
+import OTPModal from "./OTPModal";
 
 type FormType = "sign-in" | "sign-up";
 
@@ -42,7 +43,7 @@ const authFormSchema = (formType: FormType) => {
 const AuthForm = ({ type }: { type: FormType }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [accountId, setAccountId] = useState(false);
+  const [accountId, setAccountId] = useState("");
 
   const formSchema = authFormSchema(type);
 
@@ -155,6 +156,9 @@ const AuthForm = ({ type }: { type: FormType }) => {
         </form>
       </Form>
       {/* OTP Verification */}
+      {accountId && (
+        <OTPModal email={form.getValues("email")} accountId={accountId} />
+      )}
     </>
   );
 };
