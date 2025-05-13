@@ -1,15 +1,16 @@
 "use server";
 
 import { ID, Query } from "node-appwrite";
-import { createAdminClient } from "../appwrite";
+import { createAdminClient, createSessionClient } from "../appwrite";
 import { appwriteconfig } from "../appwrite/config";
 import { parseStringify } from "../utils";
 import { cookies } from "next/headers";
+import { avatarPlaceholderUrl } from "@/constants";
 
 const getUserByEmail = async (email: string) => {
-  const { database } = await createAdminClient();
+  const { databases } = await createAdminClient();
 
-  const result = await database.listDocuments(
+  const result = await databases.listDocuments(
     appwriteconfig.databaseId,
     appwriteconfig.usersCollectionId,
     [Query.equal("email", [email])],
@@ -46,16 +47,15 @@ export const createAccount = async ({
   if (!accountId) throw new Error("Failed to send email OTP");
 
   if (!existingUser) {
-    const { database } = await createAdminClient();
-    await database.createDocument(
+    const { databases } = await createAdminClient();
+    await databases.createDocument(
       appwriteconfig.databaseId,
       appwriteconfig.usersCollectionId,
       ID.unique(),
       {
         fullName,
         email,
-        avatar:
-          "https://i.pinimg.com/736x/fc/04/73/fc047347b17f7df7ff288d78c8c281cf.jpg",
+        avatar: avatarPlaceholderUrl,
         accountId,
       },
     );
@@ -85,4 +85,20 @@ export const verifySecret = async ({
   } catch (error) {
     handleError(error, "Failed to verify secret");
   }
+};
+
+export const getCurrentUser = async () => {
+  const { databases, account } = await createSessionClient();
+
+  const result = await account.get();
+
+  const user = await databases.listDocuments(
+    appwriteconfig.databaseId,
+    appwriteconfig.usersCollectionId,
+    [Query.equal("accountId", result.$id)],
+  );
+
+  if (user.total <= 0) return null;
+
+  return parseStringify(user.documents[0]);
 };
